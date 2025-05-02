@@ -74,7 +74,7 @@ async def get_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
   if update.message.text.lower() in ["да", "yes", "ок", "подтверждаю"]:
-        product = context.user_data["product"]
+    product = context.user_data["product"]
     name = context.user_data["name"]
     address = context.user_data["address"]
     category = context.user_data["category"]
@@ -108,7 +108,7 @@ def send_whatsapp_order(product, name, address, category):
     )
 
     else:
-        await update.message.reply_text("❌ Заказ отменён. Вы можете начать сначала: /start")
+    await update.message.reply_text("❌ Заказ отменён. Вы можете начать сначала: /start")
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
