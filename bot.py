@@ -102,7 +102,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Twilio
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_NUMBER = "whatsapp:+19787337969"
+TWILIO_WHATSAPP_NUMBER = "whatsapp:+14155238886"
 MANAGER_NUMBER = "whatsapp:+992005997884"
 
 def send_whatsapp_order(product, name, address, category):
@@ -146,3 +146,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+print("SID:", TWILIO_ACCOUNT_SID)
+print("TOKEN:", TWILIO_AUTH_TOKEN[:5] + "..." if TWILIO_AUTH_TOKEN else "TOKEN is None")
