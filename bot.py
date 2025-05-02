@@ -107,13 +107,13 @@ def send_whatsapp_order(product, name, address, category):
         to=MANAGER_NUMBER
     )
 
-    else:
-        await update.message.reply_text("❌ Заказ отменён. Вы можете начать сначала: /start")
+if user_input == "да":
+    await update.message.reply_text("Спасибо за заказ!")
+    return ConversationHandler.END
+else:
+    await update.message.reply_text("Хорошо, заказ отменён.")
     return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Выход из процесса. Чтобы начать заново — /start")
-    return ConversationHandler.END
 
 # Запуск бота
 def main():
