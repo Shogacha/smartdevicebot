@@ -1,7 +1,8 @@
 import json
 import os
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters, ConversationHandler
+from twilio.rest import Client
 
 # Состояния
 CATEGORY, SELECT_PRODUCT, GET_NAME, GET_ADDRESS, CONFIRM = range(5)
@@ -10,21 +11,18 @@ CATEGORY, SELECT_PRODUCT, GET_NAME, GET_ADDRESS, CONFIRM = range(5)
 with open("data/catalog.json", "r", encoding="utf-8") as f:
     catalog = json.load(f)
 
-# Память сессий пользователей
-user_data = {}
-
+# Старт
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(cat, callback_data=cat)] for cat in catalog.keys()]
     await update.message.reply_text("Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
     return CATEGORY
 
+# Категория выбрана
 async def category_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     category = query.data
     context.user_data["category"] = category
-    keyboard = []
-    media = []
 
     for item in catalog[category]:
         caption = f"№{item['id']} — {item['name']}\nЦена: {item['price']}₽"
@@ -34,11 +32,17 @@ async def category_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.message.reply_text("Введите номер товара, который вас заинтересовал (например, 1):")
     return SELECT_PRODUCT
 
+# Выбор товара
 async def select_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    product_id = int(update.message.text.strip())
-    category = context.user_data["category"]
+    try:
+        product_id = int(update.message.text.strip())
+    except ValueError:
+        await update.message.reply_text("Пожалуйста, введите номер товара цифрой:")
+        return SELECT_PRODUCT
 
+    category = context.user_data["category"]
     product = next((p for p in catalog[category] if p["id"] == product_id), None)
+
     if not product:
         await update.message.reply_text("Товар с таким номером не найден. Введите ещё раз:")
         return SELECT_PRODUCT
@@ -47,11 +51,13 @@ async def select_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Введите ваше имя:")
     return GET_NAME
 
+# Имя
 async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["name"] = update.message.text
     await update.message.reply_text("Введите ваш адрес:")
     return GET_ADDRESS
 
+# Адрес
 async def get_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["address"] = update.message.text
 
@@ -72,22 +78,32 @@ async def get_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(summary)
     return CONFIRM
 
+# Подтверждение
 async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  if update.message.text.lower() in ["да", "yes", "ок", "подтверждаю"]:
-    product = context.user_data["product"]
-    name = context.user_data["name"]
-    address = context.user_data["address"]
-    category = context.user_data["category"]
+    text = update.message.text.lower()
+    if text in ["да", "yes", "ок", "подтверждаю"]:
+        product = context.user_data["product"]
+        name = context.user_data["name"]
+        address = context.user_data["address"]
+        category = context.user_data["category"]
 
-    send_whatsapp_order(product, name, address, category)
-    await update.message.reply_text("✅ Спасибо! Ваш заказ принят. Мы скоро с вами свяжемся.")
+        send_whatsapp_order(product, name, address, category)
+        await update.message.reply_text("✅ Спасибо! Ваш заказ принят. Мы скоро с вами свяжемся.")
+    else:
+        await update.message.reply_text("❌ Заказ отменён.")
 
+    return ConversationHandler.END
 
-# Настройки Twilio (замени на свои реальные данные)
+# Отмена
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Заказ отменён.")
+    return ConversationHandler.END
+
+# Twilio
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_NUMBER = "whatsapp:+19787337969"  # Это номер Twilio
-MANAGER_NUMBER = "whatsapp:+992005997884"  # Твой WhatsApp номер
+TWILIO_WHATSAPP_NUMBER = "whatsapp:+19787337969"
+MANAGER_NUMBER = "whatsapp:+992005997884"
 
 def send_whatsapp_order(product, name, address, category):
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -107,15 +123,7 @@ def send_whatsapp_order(product, name, address, category):
         to=MANAGER_NUMBER
     )
 
-if user_input == "да":
-    await update.message.reply_text("Спасибо за заказ!")
-    return ConversationHandler.END
-else:
-    await update.message.reply_text("Хорошо, заказ отменён.")
-    return ConversationHandler.END
-
-
-# Запуск бота
+# Запуск
 def main():
     TOKEN = os.getenv("BOT_TOKEN")
     app = ApplicationBuilder().token(TOKEN).build()
@@ -133,7 +141,7 @@ def main():
     )
 
     app.add_handler(conv)
-    print("Бот запущен!")
+    print("✅ Бот запущен!")
     app.run_polling()
 
 if __name__ == "__main__":
