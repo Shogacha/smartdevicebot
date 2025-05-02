@@ -1,0 +1,25 @@
+{
+    "Удобство": [
+      {
+        "id": 1,
+        "name": "Smart Lock X1",
+        "price": 5500,
+        "image": "data/images/x1.jpg"
+      },
+      {
+        "id": 2,
+        "name": "Smart Lock Lite",
+        "price": 4200,
+        "image": "data/images/lite.jpg"
+      }
+    ],
+    "Надёжность": [
+      {
+        "id": 3,
+        "name": "Secure Lock Pro",
+        "price": 6200,
+        "image": "data/images/pro.jpg"
+      }
+    ]
+  }
+  
